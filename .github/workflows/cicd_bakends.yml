@@ -7,7 +7,7 @@ on:
  push:
 
   branches: [ "deploy" ] # Configurado para tu rama deploy
-    workflow_dispatch:
+  workflow_dispatch:
 
   paths:
 
@@ -29,76 +29,74 @@ jobs:
 
   - name: Checkout código
 
-   uses: actions/checkout@v3
+    uses: actions/checkout@v3
 
 
 
   - name: Configurar credenciales AWS
 
-   uses: aws-actions/configure-aws-credentials@v4
+    uses: aws-actions/configure-aws-credentials@v4
 
-   with:
+    with:
 
-    aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
 
-    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+      aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
 
-    aws-region: ${{ secrets.AWS_REGION }}
+      aws-region: ${{ secrets.AWS_REGION }}
 
 
 
   - name: Login en Amazon ECR
 
-   uses: aws-actions/amazon-ecr-login@v1
+    uses: aws-actions/amazon-ecr-login@v1
 
 
 
   - name: Build imagen Backend y push a ECR
 
-   run: |
+    run: |
 
-    # Usaremos la carpeta de despacho como ejemplo, ajusta si es necesario
+      # Usaremos la carpeta de despacho como ejemplo, ajusta si es necesario
 
-    cd Springboot-API-REST-DESPACHO
+      cd Springboot-API-REST-DESPACHO
 
-    docker build -t innovatech-backend .
+      docker build -t innovatech-backend .
 
-    docker tag innovatech-backend:latest ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
+      docker tag innovatech-backend:latest ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
 
-    docker push ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
+      docker push ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
 
 
 
   - name: Desplegar Backend vía SSM
 
-   run: |
+    run: |
 
-    aws ssm send-command \
+      aws ssm send-command \
 
-     --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
+      --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
 
-     --document-name "AWS-RunShellScript" \
+      --document-name "AWS-RunShellScript" \
 
-     --comment "Actualizar backend desde ECR" \
+      --comment "Actualizar backend desde ECR" \
 
-     --parameters '{"commands":[
+      --parameters '{"commands":[
 
-      "set -e",
+        "set -e",
 
-      "aws ecr get-login-password --region '${{ secrets.AWS_REGION }}' | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
+        "aws ecr get-login-password --region '${{ secrets.AWS_REGION }}' | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
 
-      "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}:latest",
+        "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}:latest",
 
-      "docker stop back-innovatech || true",
+        "docker stop back-innovatech || true",
 
-      "docker rm back-innovatech || true",
+        "docker rm back-innovatech || true",
 
-      "docker run -d --name back-innovatech -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}:latest"
+        "docker run -d --name back-innovatech -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}:latest"
 
-     ]}' \
+      ]}' \
 
-     --output text
-
-Escribir mensaje
+      --output text
