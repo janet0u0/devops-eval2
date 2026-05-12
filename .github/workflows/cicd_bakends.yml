@@ -4,16 +4,18 @@ name: cicd_backends
 
 on:
 
- push:
+  push:
 
-  branches: [ "deploy" ] # Configurado para tu rama deploy
+    branches: [ "deploy" ] # Configurado para tu rama deploy
+    
+
+    paths:
+
+    - "Springboot-API-REST/**"
+
+    - "Springboot-API-REST-DESPACHO/**"
+
   workflow_dispatch:
-
-  paths:
-
-   - "Springboot-API-REST/**"
-
-   - "Springboot-API-REST-DESPACHO/**"
 
 
 

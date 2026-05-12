@@ -4,14 +4,16 @@ name: cicd_frontend
 
 on:
 
- push:
+  push:
 
-  branches: [ "deploy" ] # Configurado para tu rama deploy
+    branches: [ "deploy" ] # Configurado para tu rama deploy
+    
+
+    paths:
+
+    - "front_despacho/**" # Detecta cambios en tu carpeta de front
+
   workflow_dispatch:
-
-  paths:
-
-   - "front_despacho/**" # Detecta cambios en tu carpeta de front
 
 
 
