@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Checkout código
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configurar credenciales AWS
         uses: aws-actions/configure-aws-credentials@v4
@@ -24,27 +24,28 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login en Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build imagen Frontend y push a ECR
+      # =========================
+      # FRONTEND DESPACHO
+      # =========================
+      - name: Copiar código Frontend a S3
         run: |
-          cd front_despacho
-          docker build -t innovatech-frontend .
-          docker tag innovatech-frontend:latest ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
-          docker push ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
+          zip -r frontend.zip front_despacho/
+          aws s3 cp frontend.zip s3://${{ secrets.S3_BUCKET }}/frontend.zip
 
-      - name: Desplegar Frontend vía SSM (FIXED)
+      - name: Build, Push y Deploy Frontend en EC2 vía SSM
         run: |
           aws ssm send-command \
             --instance-ids "${{ secrets.EC2_FRONTEND_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --comment "Deploy frontend Innovatech" \
             --parameters 'commands=[
+              "aws s3 cp s3://${{ secrets.S3_BUCKET }}/frontend.zip /home/ec2-user/frontend.zip && unzip -o /home/ec2-user/frontend.zip -d /home/ec2-user/",
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-              "sudo docker pull ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest",
-              "sudo docker stop front-innovatech || true",
-              "sudo docker rm front-innovatech || true",
-              "sudo docker run -d --name front-innovatech -p 80:80 ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest"
+              "docker build -t innovatech-frontend /home/ec2-user/front_despacho/",
+              "docker tag innovatech-frontend:latest ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest",
+              "docker push ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest",
+              "docker stop front-innovatech || true",
+              "docker rm front-innovatech || true",
+              "docker run -d --name front-innovatech -p 80:80 innovatech-frontend:latest"
             ]' \
             --output text
