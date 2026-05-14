@@ -41,7 +41,6 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --comment "Deploy frontend Innovatech" \
             --parameters 'commands=[
-              "set -e",
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
               "sudo docker pull ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest",
               "sudo docker stop front-innovatech || true",

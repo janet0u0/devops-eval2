@@ -42,7 +42,6 @@ jobs:
             --document-name AWS-RunShellScript \
             --comment "Deploy backend Innovatech" \
             --parameters 'commands=[
-              "set -e",
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
               "sudo docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}:latest",
               "sudo docker stop back-innovatech || true",
