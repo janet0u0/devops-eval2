@@ -34,7 +34,6 @@ jobs:
       - name: Build Backend Despachos
         run: |
           cd back-Despachos_SpringBoot
-          ls
           docker build -t innovatech-backend-despachos .
           docker tag innovatech-backend-despachos:latest ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
           docker push ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
@@ -51,4 +50,28 @@ jobs:
               "docker stop back-despachos || true",
               "docker rm back-despachos || true",
               "docker run -d --name back-despachos -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest"
+            ]'
+
+      # =========================
+      # BACKEND VENTAS
+      # =========================
+      - name: Build Backend Ventas
+        run: |
+          cd back-Ventas_SpringBoot
+          docker build -t innovatech-backend-ventas .
+          docker tag innovatech-backend-ventas:latest ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest
+          docker push ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest
+
+      - name: Deploy Backend Ventas vía SSM
+        run: |
+          aws ssm send-command \
+            --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
+            --document-name AWS-RunShellScript \
+            --comment "Deploy backend ventas" \
+            --parameters 'commands=[
+              "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
+              "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest",
+              "docker stop back-ventas || true",
+              "docker rm back-ventas || true",
+              "docker run -d --name back-ventas -p 8081:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest"
             ]'
