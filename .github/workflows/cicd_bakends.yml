@@ -39,12 +39,12 @@ jobs:
           docker tag innovatech-backend-despachos:latest ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
           docker push ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
 
-      - name: Deploy Backend Despachos vía SSM
+      - name: Deploy Backend vía SSM
         run: |
           aws ssm send-command \
-            --instance-ids "${{ secrets.EC2_BACKEND_INSTANCE_ID }}" \
+            --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
             --document-name AWS-RunShellScript \
-            --comment "Deploy backend despachos" \
+            --comment "Actualizar backend desde ECR" \
             --parameters 'commands=[
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
               "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest",
