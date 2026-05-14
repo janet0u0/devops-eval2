@@ -90,7 +90,7 @@ export const FormDespacho = ({ venta, onClose }) => {
           />
         </div>
         <div className="mb-5">
-          <label className="block font-bold mb-2">Dirección de entrega</label>
+          <label className="block font-bold mb-2">Dirección de entrega- TEST CI/CD</label>
           <input
             type="text"
             disabled={true}
