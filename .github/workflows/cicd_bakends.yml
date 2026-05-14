@@ -34,6 +34,7 @@ jobs:
       - name: Build Backend Despachos
         run: |
           cd back-Despachos_SpringBoot
+          ls
           docker build -t innovatech-backend-despachos .
           docker tag innovatech-backend-despachos:latest ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
           docker push ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
