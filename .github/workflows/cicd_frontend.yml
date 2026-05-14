@@ -83,8 +83,6 @@ jobs:
 
       --parameters '{"commands":[
 
-        "set -e",
-
         "aws ecr get-login-password --region '${{ secrets.AWS_REGION }}' | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
 
         "docker pull ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest",
