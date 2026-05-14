@@ -4,8 +4,8 @@ on:
   push:
     branches: ["deploy"]
     paths:
-      - "Springboot-API-REST/**"
-      - "Springboot-API-REST-DESPACHO/**"
+      - "back-Ventas_SpringBoot/**"
+      - "back-Despachos_SpringBoot/**"
 
   workflow_dispatch:
 
