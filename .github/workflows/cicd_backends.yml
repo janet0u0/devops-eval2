@@ -1,102 +1,76 @@
 name: cicd_backends
 
-
-
 on:
-
   push:
-
-    branches: [ "deploy" ] # Configurado para tu rama deploy
-    
-
+    branches: ["deploy"]
     paths:
-
-    - "Springboot-API-REST/**"
-
-    - "Springboot-API-REST-DESPACHO/**"
+      - "back-Ventas_SpringBoot/**"
+      - "back-Despachos_SpringBoot/**"
 
   workflow_dispatch:
 
-
-
 jobs:
+  build-push-deploy-backend:
+    runs-on: ubuntu-latest
 
- build-push-deploy-backend:
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
 
-  runs-on: ubuntu-latest
+      - name: Configurar credenciales AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
+      # =========================
+      # BACKEND DESPACHOS
+      # =========================
+      - name: Copiar código Despachos a S3
+        run: |
+          zip -r despachos.zip back-Despachos_SpringBoot/
+          aws s3 cp despachos.zip s3://${{ secrets.S3_BUCKET }}/despachos.zip
 
+      - name: Build, Push y Deploy Despachos en EC2 vía SSM
+        run: |
+          aws ssm send-command \
+            --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
+            --document-name AWS-RunShellScript \
+            --comment "Build y deploy despachos" \
+            --parameters 'commands=[
+              "aws s3 cp s3://${{ secrets.S3_BUCKET }}/despachos.zip /home/ec2-user/despachos.zip && unzip -o /home/ec2-user/despachos.zip -d /home/ec2-user/",
+              "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
+              "docker build -t innovatech-backend /home/ec2-user/back-Despachos_SpringBoot/",
+              "docker tag innovatech-backend:latest ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest",
+              "docker push ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest",
+              "docker stop back-despachos || true",
+              "docker rm back-despachos || true",
+              "docker run -d --name back-despachos -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest"
+            ]'
 
-  steps:
+      # =========================
+      # BACKEND VENTAS
+      # =========================
+      - name: Copiar código Ventas a S3
+        run: |
+          zip -r ventas.zip back-Ventas_SpringBoot/
+          aws s3 cp ventas.zip s3://${{ secrets.S3_BUCKET }}/ventas.zip
 
-  - name: Checkout código
-
-    uses: actions/checkout@v3
-
-
-
-  - name: Configurar credenciales AWS
-
-    uses: aws-actions/configure-aws-credentials@v4
-
-    with:
-
-      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-
-      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-      aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-
-      aws-region: ${{ secrets.AWS_REGION }}
-
-
-
-  - name: Login en Amazon ECR
-
-    uses: aws-actions/amazon-ecr-login@v1
-
-
-
-  - name: Build imagen Backend y push a ECR
-
-    run: |
-
-      # Usaremos la carpeta de despacho como ejemplo, ajusta si es necesario
-
-      cd Springboot-API-REST-DESPACHO
-
-      docker build -t innovatech-backend .
-
-      docker tag innovatech-backend:latest ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
-
-      docker push ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
-
-
-
-  - name: Desplegar Backend vía SSM
-
-    run: |
-
-      aws ssm send-command \
-
-      --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
-
-      --document-name "AWS-RunShellScript" \
-
-      --comment "Actualizar backend desde ECR" \
-
-      --parameters '{"commands":[
-
-        "aws ecr get-login-password --region '${{ secrets.AWS_REGION }}' | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-
-        "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}:latest",
-
-        "docker stop back-innovatech || true",
-
-        "docker rm back-innovatech || true",
-
-        "docker run -d --name back-innovatech -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}:latest"
-
-      ]}' \
-
-      --output text
+      - name: Build, Push y Deploy Ventas en EC2 vía SSM
+        run: |
+          aws ssm send-command \
+            --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
+            --document-name AWS-RunShellScript \
+            --comment "Build y deploy ventas" \
+            --parameters 'commands=[
+              "aws s3 cp s3://${{ secrets.S3_BUCKET }}/ventas.zip /home/ec2-user/ventas.zip && unzip -o /home/ec2-user/ventas.zip -d /home/ec2-user/",
+              "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
+              "docker build -t innovatech-ventas /home/ec2-user/back-Ventas_SpringBoot/",
+              "docker tag innovatech-ventas:latest ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest",
+              "docker push ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest",
+              "docker stop back-ventas || true",
+              "docker rm back-ventas || true",
+              "docker run -d --name back-ventas -p 8081:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest"
+            ]'
