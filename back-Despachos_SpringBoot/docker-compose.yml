@@ -1,0 +1,45 @@
+services:
+  mysql-despachos:
+    image: mysql:8.0
+    container_name: mysql-despachos
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: despachos_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin1234
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-despachos-data:/var/lib/mysql
+    networks:
+      - net-despachos
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uadmin", "-padmin1234"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  back-despachos:
+    image: innovatech-backend:latest
+    container_name: back-despachos
+    environment:
+      DB_ENDPOINT: mysql-despachos
+      DB_PORT: 3306
+      DB_NAME: despachos_db
+      DB_USERNAME: admin
+      DB_PASSWORD: admin1234
+    ports:
+      - "8080:8081"
+    depends_on:
+      mysql-despachos:
+        condition: service_healthy
+    networks:
+      - net-despachos
+
+volumes:
+  mysql-despachos-data:
+    name: mysql-despachos-data
+
+networks:
+  net-despachos:
+    driver: bridge
