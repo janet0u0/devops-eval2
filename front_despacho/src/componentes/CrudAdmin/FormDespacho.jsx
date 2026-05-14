@@ -99,7 +99,7 @@ export const FormDespacho = ({ venta, onClose }) => {
           />
         </div>
         <div className="mb-5">
-          <label className="block font-bold mb-2">Valor de compra</label>
+          <label className="block font-bold mb-2">Valor de compra- TEST CI/CD</label>
           <input
             type="number"
             value={venta.valorCompra}
