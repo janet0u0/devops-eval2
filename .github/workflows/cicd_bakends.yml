@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout código
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Configurar credenciales AWS
         uses: aws-actions/configure-aws-credentials@v4
@@ -26,27 +26,33 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login en Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build imagen Backend (DESPACHOS)
+      # ======================
+      # BUILD BACKEND
+      # ======================
+      - name: Build imagen Backend
         run: |
           cd back-Despachos_SpringBoot
-          ls
           docker build -t innovatech-backend .
           docker tag innovatech-backend:latest ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
           docker push ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
 
+      # ======================
+      # DEPLOY BACKEND
+      # ======================
       - name: Desplegar Backend vía SSM
         run: |
           aws ssm send-command \
-            --instance-ids "${{ secrets.EC2_BACKEND_INSTANCE_ID }}" \
-            --document-name AWS-RunShellScript \
-            --comment "Deploy backend Innovatech" \
+            --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
+            --document-name "AWS-RunShellScript" \
+            --comment "Actualizar backend desde ECR" \
             --parameters 'commands=[
+              "set -e",
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-              "sudo docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}:latest",
-              "sudo docker stop back-innovatech || true",
-              "sudo docker rm back-innovatech || true",
-              "sudo docker run -d --name back-innovatech -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}:latest"
+              "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}:latest",
+              "docker stop back-innovatech || true",
+              "docker rm back-innovatech || true",
+              "docker run -d --name back-innovatech -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}:latest"
             ]' \
             --output text
