@@ -28,31 +28,27 @@ jobs:
       - name: Login en Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      # ======================
-      # BUILD BACKEND
-      # ======================
-      - name: Build imagen Backend
+      # =========================
+      # BACKEND DESPACHOS
+      # =========================
+      - name: Build Backend Despachos
         run: |
           cd back-Despachos_SpringBoot
-          docker build -t innovatech-backend .
-          docker tag innovatech-backend:latest ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
-          docker push ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
+          ls
+          docker build -t innovatech-backend-despachos .
+          docker tag innovatech-backend-despachos:latest ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
+          docker push ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
 
-      # ======================
-      # DEPLOY BACKEND
-      # ======================
-      - name: Desplegar Backend vía SSM
+      - name: Deploy Backend Despachos vía SSM
         run: |
           aws ssm send-command \
-            --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
-            --document-name "AWS-RunShellScript" \
-            --comment "Actualizar backend desde ECR" \
+            --instance-ids "${{ secrets.EC2_BACKEND_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --comment "Deploy backend despachos" \
             --parameters 'commands=[
-              "set -e",
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-              "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}:latest",
-              "docker stop back-innovatech || true",
-              "docker rm back-innovatech || true",
-              "docker run -d --name back-innovatech -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}:latest"
-            ]' \
-            --output text
+              "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest",
+              "docker stop back-despachos || true",
+              "docker rm back-despachos || true",
+              "docker run -d --name back-despachos -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest"
+            ]'
