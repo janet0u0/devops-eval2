@@ -28,24 +28,58 @@ jobs:
       - name: Login en Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build imagen Backend y push a ECR
+      # =========================
+      # BACKEND VENTAS
+      # =========================
+      - name: Build Backend Ventas
         run: |
-          cd back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
-          docker build -t innovatech-backend .
-          docker tag innovatech-backend:latest ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
-          docker push ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
+          cd back-Ventas_SpringBoot
+          docker build -t innovatech-backend-ventas .
+          docker tag innovatech-backend-ventas:latest ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest
+          docker push ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest
 
-      - name: Desplegar Backend vía SSM
+      # =========================
+      # BACKEND DESPACHOS
+      # =========================
+      - name: Build Backend Despachos
+        run: |
+          cd back-Despachos_SpringBoot
+          docker build -t innovatech-backend-despachos .
+          docker tag innovatech-backend-despachos:latest ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
+          docker push ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
+
+      # =========================
+      # DEPLOY DESPACHOS (EC2)
+      # =========================
+      - name: Deploy Backend Despachos vía SSM
         run: |
           aws ssm send-command \
             --instance-ids "${{ secrets.EC2_BACKEND_INSTANCE_ID }}" \
             --document-name AWS-RunShellScript \
-            --comment "Deploy backend Innovatech" \
+            --comment "Deploy backend despachos Innovatech" \
             --parameters 'commands=[
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-              "sudo docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}:latest",
-              "sudo docker stop back-innovatech || true",
-              "sudo docker rm back-innovatech || true",
-              "sudo docker run -d --name back-innovatech -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}:latest"
+              "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest",
+              "docker stop back-despachos || true",
+              "docker rm back-despachos || true",
+              "docker run -d --name back-despachos -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest"
+            ]' \
+            --output text
+
+      # =========================
+      # DEPLOY VENTAS (EC2)
+      # =========================
+      - name: Deploy Backend Ventas vía SSM
+        run: |
+          aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_BACKEND_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --comment "Deploy backend ventas Innovatech" \
+            --parameters 'commands=[
+              "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
+              "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest",
+              "docker stop back-ventas || true",
+              "docker rm back-ventas || true",
+              "docker run -d --name back-ventas -p 8081:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest"
             ]' \
             --output text
