@@ -1,0 +1,45 @@
+services:
+  mysql-ventas:
+    image: mysql:8.0
+    container_name: mysql-ventas
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: ventas_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin1234
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql-ventas-data:/var/lib/mysql
+    networks:
+      - net-ventas
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uadmin", "-padmin1234"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  back-ventas:
+    image: innovatech-ventas:latest
+    container_name: back-ventas
+    environment:
+      DB_ENDPOINT: mysql-ventas
+      DB_PORT: 3306
+      DB_NAME: ventas_db
+      DB_USERNAME: admin
+      DB_PASSWORD: admin1234
+    ports:
+      - "8081:8080"
+    depends_on:
+      mysql-ventas:
+        condition: service_healthy
+    networks:
+      - net-ventas
+
+volumes:
+  mysql-ventas-data:
+    name: mysql-ventas-data
+
+networks:
+  net-ventas:
+    driver: bridge
