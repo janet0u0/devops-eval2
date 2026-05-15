@@ -1,45 +1,53 @@
 services:
-  mysql-ventas:
+  # Base de Datos Única
+  database:
     image: mysql:8.0
-    container_name: mysql-ventas
+    container_name: mysql-global
     environment:
-      MYSQL_ROOT_PASSWORD: root1234
-      MYSQL_DATABASE: ventas_db
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: admin1234
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-innovatech_db}
     ports:
-      - "3308:3306"
+      - '3306:3306'
     volumes:
-      - mysql-ventas-data:/var/lib/mysql
+      - db_data:/var/lib/mysql
     networks:
-      - net-ventas
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uadmin", "-padmin1234"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - innovatech-network
 
-  back-ventas:
-    image: innovatech-ventas:latest
+  # Microservicio de Ventas
+  ventas:
+    build:
+      context: ./back-Ventas_SpringBoot/Springboot-API-REST
     container_name: back-ventas
-    environment:
-      DB_ENDPOINT: mysql-ventas
-      DB_PORT: 3306
-      DB_NAME: ventas_db
-      DB_USERNAME: admin
-      DB_PASSWORD: admin1234
     ports:
-      - "8081:8080"
+      - '8080:8080'
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://database:3306/${DB_NAME:-innovatech_db}?allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-root}
     depends_on:
-      mysql-ventas:
-        condition: service_healthy
+      - database
     networks:
-      - net-ventas
+      - innovatech-network
+
+  # Microservicio de Despachos
+  despachos:
+    build:
+      context: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+    container_name: back-despachos
+    ports:
+      - '8081:8080'
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://database:3306/${DB_NAME:-innovatech_db}?allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-root}
+    depends_on:
+      - database
+    networks:
+      - innovatech-network
 
 volumes:
-  mysql-ventas-data:
-    name: mysql-ventas-data
+  db_data:
 
 networks:
-  net-ventas:
+  innovatech-network:
     driver: bridge
