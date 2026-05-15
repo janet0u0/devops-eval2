@@ -17,9 +17,7 @@ docker-compose up -d
 ```
 
 ## Acceso
-Una vez levantado, acceder desde el navegador:
-
-http://localhost:80
+Una vez levantado, acceder desde el navegador: http://localhost:80
 
 En producción AWS:
 http://3.91.16.212
