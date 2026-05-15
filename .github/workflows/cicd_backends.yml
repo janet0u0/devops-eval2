@@ -25,48 +25,65 @@ jobs:
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Login en Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
       # =========================
       # BACKEND DESPACHOS
       # =========================
-      - name: Copiar código Despachos a EC2 vía S3
+      - name: Build imagen Despachos
         run: |
-          zip -r despachos.zip back-Despachos_SpringBoot/
-          aws s3 cp despachos.zip s3://${{ secrets.S3_BUCKET }}/despachos.zip
+          cd back-Despachos_SpringBoot
+          docker build -t innovatech-despachos .
 
-      - name: Build y Deploy Despachos en EC2 vía SSM
+      - name: Tag imagen Despachos
+        run: |
+          docker tag innovatech-despachos:latest ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
+
+      - name: Push imagen Despachos a ECR
+        run: |
+          docker push ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest
+
+      - name: Deploy Despachos vía SSM
         run: |
           aws ssm send-command \
             --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
-            --document-name AWS-RunShellScript \
-            --comment "Build y deploy despachos" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy backend despachos" \
             --parameters 'commands=[
-              "aws s3 cp s3://${{ secrets.S3_BUCKET }}/despachos.zip /home/ec2-user/despachos.zip",
-              "unzip -o /home/ec2-user/despachos.zip -d /home/ec2-user/",
-              "cd /home/ec2-user/back-Despachos_SpringBoot && docker build -t back-despachos .",
+              "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
+              "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest",
               "docker stop back-despachos || true",
               "docker rm back-despachos || true",
-              "docker run -d --name back-despachos -p 8080:8080 back-despachos:latest"
+              "docker run -d --name back-despachos -p 8080:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}-despachos:latest"
             ]'
 
       # =========================
       # BACKEND VENTAS
       # =========================
-      - name: Copiar código Ventas a EC2 vía S3
+      - name: Build imagen Ventas
         run: |
-          zip -r ventas.zip back-Ventas_SpringBoot/
-          aws s3 cp ventas.zip s3://${{ secrets.S3_BUCKET }}/ventas.zip
+          cd back-Ventas_SpringBoot
+          docker build -t innovatech-ventas .
 
-      - name: Build y Deploy Ventas en EC2 vía SSM
+      - name: Tag imagen Ventas
+        run: |
+          docker tag innovatech-ventas:latest ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest
+
+      - name: Push imagen Ventas a ECR
+        run: |
+          docker push ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest
+
+      - name: Deploy Ventas vía SSM
         run: |
           aws ssm send-command \
             --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
-            --document-name AWS-RunShellScript \
-            --comment "Build y deploy ventas" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy backend ventas" \
             --parameters 'commands=[
-              "aws s3 cp s3://${{ secrets.S3_BUCKET }}/ventas.zip /home/ec2-user/ventas.zip",
-              "unzip -o /home/ec2-user/ventas.zip -d /home/ec2-user/",
-              "cd /home/ec2-user/back-Ventas_SpringBoot && docker build -t back-ventas .",
+              "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
+              "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest",
               "docker stop back-ventas || true",
               "docker rm back-ventas || true",
-              "docker run -d --name back-ventas -p 8081:8080 back-ventas:latest"
+              "docker run -d --name back-ventas -p 8081:8080 ${{ secrets.ECR_REPO_URL_BACKEND }}-ventas:latest"
             ]'
