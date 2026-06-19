@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: ventas
-          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/tienda-bakend
+          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/innovatech-ventas
           ports:
             - containerPort: 8080
           env:
