@@ -3,7 +3,7 @@ FROM maven:3.8.8-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY pom.xml .
 # Descarga dependencias para aprovechar la caché de Docker
-RUN mvc dependency:go-offline
+RUN mvn dependency:go-offline
 COPY src ./src
 RUN mvn clean package -DskipTests
 
