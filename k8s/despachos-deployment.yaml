@@ -15,7 +15,8 @@ spec:
     spec:
       containers:
         - name: despachos
-          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/innovatech-despachos
+          image: 519372048065.dkr.ecr.us-east-1.amazonaws.com/innovatech-despachoss:latest
+
           ports:
             - containerPort: 8081
           env:
