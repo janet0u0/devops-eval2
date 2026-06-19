@@ -28,22 +28,26 @@ spec:
                 secretKeyRef:
                   name: mysql-secret
                   key: MYSQL_ROOT_PASSWORD
+            - name: OTEL_SDK_DISABLED
+              value: "true"
+            - name: JAVA_TOOL_OPTIONS
+              value: ""
           resources:
             requests:
-              cpu: "200m"
-              memory: "384Mi"
+              cpu: "100m"
+              memory: "256Mi"
             limits:
-              cpu: "750m"
-              memory: "768Mi"
+              cpu: "500m"
+              memory: "512Mi"
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: 8081
-            initialDelaySeconds: 20
+            initialDelaySeconds: 30
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
               port: 8081
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 15
